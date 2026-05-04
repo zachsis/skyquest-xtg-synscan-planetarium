@@ -5,27 +5,34 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/zhatsis/oriontelescope/internal/config"
+	"github.com/zhatsis/oriontelescope/internal/ui/panels"
 )
 
 // MainApp holds the application window, navigation, and panels.
 type MainApp struct {
 	fyneApp fyne.App
 	window  fyne.Window
+	config  *config.Config
 	nav     *widget.List
 	content *fyne.Container
 	panels  []Panel
 }
 
 // NewMainApp creates a new MainApp.
-func NewMainApp(a fyne.App, w fyne.Window) *MainApp {
+func NewMainApp(a fyne.App, w fyne.Window, cfg *config.Config) *MainApp {
 	return &MainApp{
 		fyneApp: a,
 		window:  w,
+		config:  cfg,
 	}
 }
 
 // Setup initializes the navigation panels and window layout.
 func (m *MainApp) Setup() {
+	settingsPanel := panels.NewSettingsPanel(m.config, nil)
+
 	m.panels = []Panel{
 		NewPlaceholderPanel("Status", theme.InfoIcon()),
 		NewPlaceholderPanel("GoTo", theme.NavigateNextIcon()),
@@ -33,7 +40,7 @@ func (m *MainApp) Setup() {
 		NewPlaceholderPanel("Alignment", theme.VisibilityIcon()),
 		NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon()),
 		NewPlaceholderPanel("Objects", theme.SearchIcon()),
-		NewPlaceholderPanel("Settings", theme.SettingsIcon()),
+		settingsPanel,
 	}
 
 	m.content = container.NewStack(m.panels[0].Content())
@@ -48,7 +55,11 @@ func (m *MainApp) Setup() {
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			c := obj.(*fyne.Container)
-			c.Objects[0].(*widget.Icon).SetResource(m.panels[id].Icon())
+			icon := m.panels[id].Icon()
+			if icon == nil {
+				icon = theme.SettingsIcon()
+			}
+			c.Objects[0].(*widget.Icon).SetResource(icon)
 			c.Objects[1].(*widget.Label).SetText(m.panels[id].Title())
 		},
 	)
