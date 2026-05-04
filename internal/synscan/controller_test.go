@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zhatsis/oriontelescope/internal/serial"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/serial"
 )
 
 // scriptedMock sets up a MockPort that automatically responds to commands.

@@ -5,8 +5,8 @@ import (
 
 	"fyne.io/fyne/v2/app"
 
-	"github.com/zhatsis/oriontelescope/internal/config"
-	"github.com/zhatsis/oriontelescope/internal/ui"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui"
 )
 
 func main() {

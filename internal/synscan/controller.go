@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zhatsis/oriontelescope/internal/serial"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/serial"
 )
 
 // Controller manages SynScan protocol communication over a serial port.

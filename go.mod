@@ -1,4 +1,4 @@
-module github.com/zhatsis/oriontelescope
+module github.com/zachsis/skyquest-xtg-synscan-planetarium
 
 go 1.26.2
 

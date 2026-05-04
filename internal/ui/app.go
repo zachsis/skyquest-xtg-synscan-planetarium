@@ -6,8 +6,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/zhatsis/oriontelescope/internal/config"
-	"github.com/zhatsis/oriontelescope/internal/ui/panels"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/panels"
 )
 
 // MainApp holds the application window, navigation, and panels.

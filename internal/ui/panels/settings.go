@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/zhatsis/oriontelescope/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
 )
 
 // SettingsPanel provides the observer settings UI.
