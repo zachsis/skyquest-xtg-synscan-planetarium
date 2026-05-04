@@ -1,12 +1,15 @@
 package ui
 
 import (
+	"log"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/astro"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/catalog"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/panels"
@@ -38,16 +41,29 @@ func (m *MainApp) Setup() {
 	astroSvc := astro.NewAstroService(m.config)
 	statusPanel := NewStatusPanel(m.config, astroSvc)
 	m.StatusPanel = statusPanel
+
+	cat, err := catalog.NewCatalog(astroSvc)
+	if err != nil {
+		log.Printf("warning: star catalog failed to load: %v", err)
+	}
+
 	slewSvc := slew.NewGoToService(statusPanel.Controller())
 	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
 	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astroSvc, m.config)
+
+	var skyChartPanel Panel
+	if cat != nil {
+		skyChartPanel = NewSkyChartPanel(cat, m.config, astroSvc)
+	} else {
+		skyChartPanel = NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon())
+	}
 
 	m.panels = []Panel{
 		statusPanel,
 		gotoPanel,
 		trackingPanel,
 		NewAlignmentPanel(statusPanel, slewSvc, astroSvc, m.config),
-		NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon()),
+		skyChartPanel,
 		NewPlaceholderPanel("Objects", theme.SearchIcon()),
 		settingsPanel,
 	}
