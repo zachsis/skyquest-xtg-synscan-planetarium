@@ -6,7 +6,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/astro"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/panels"
 )
 
@@ -36,11 +38,13 @@ func (m *MainApp) Setup() {
 	statusPanel := NewStatusPanel(m.config)
 	m.StatusPanel = statusPanel
 
+	slewSvc := slew.NewGoToService(statusPanel.Controller())
 	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
+	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astro.NewAstroService(m.config), m.config)
 
 	m.panels = []Panel{
 		statusPanel,
-		NewPlaceholderPanel("GoTo", theme.NavigateNextIcon()),
+		gotoPanel,
 		trackingPanel,
 		NewPlaceholderPanel("Alignment", theme.VisibilityIcon()),
 		NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon()),
