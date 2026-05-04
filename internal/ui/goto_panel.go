@@ -326,27 +326,20 @@ func (p *GoToPanel) onSlewEvent(e slew.SlewEvent) {
 			FormatRA(e.TargetRA), FormatDec(e.TargetDec),
 		))
 
-	case slew.SlewComplete:
+	case slew.SlewComplete, slew.SlewCancelled, slew.SlewFailed:
 		p.mu.Lock()
 		p.inSlew = false
 		p.mu.Unlock()
 		p.progressBar.Hide()
-		p.progressMsg.SetText("Slew complete")
-		time.AfterFunc(5*time.Second, func() { p.progressMsg.SetText("") })
-
-	case slew.SlewCancelled:
-		p.mu.Lock()
-		p.inSlew = false
-		p.mu.Unlock()
-		p.progressBar.Hide()
-		p.progressMsg.SetText("Slew cancelled")
-
-	case slew.SlewFailed:
-		p.mu.Lock()
-		p.inSlew = false
-		p.mu.Unlock()
-		p.progressBar.Hide()
-		p.progressMsg.SetText("Slew failed")
+		switch e.Type {
+		case slew.SlewComplete:
+			p.progressMsg.SetText("Slew complete")
+			time.AfterFunc(5*time.Second, func() { p.progressMsg.SetText("") })
+		case slew.SlewCancelled:
+			p.progressMsg.SetText("Slew cancelled")
+		case slew.SlewFailed:
+			p.progressMsg.SetText("Slew failed")
+		}
 	}
 
 	p.updateButtonStates()

@@ -314,17 +314,15 @@ func (p *StatusPanel) poll() {
 		p.trackingVal.SetText("Off")
 	}
 
-	if inProgress {
-		p.gotoVal.SetText("Yes")
-	} else {
-		p.gotoVal.SetText("No")
-	}
+	p.gotoVal.SetText(boolYesNo(inProgress))
+	p.alignedVal.SetText(boolYesNo(aligned))
+}
 
-	if aligned {
-		p.alignedVal.SetText("Yes")
-	} else {
-		p.alignedVal.SetText("No")
+func boolYesNo(b bool) string {
+	if b {
+		return "Yes"
 	}
+	return "No"
 }
 
 func (p *StatusPanel) resetValues() {
