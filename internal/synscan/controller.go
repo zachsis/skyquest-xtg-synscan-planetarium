@@ -25,6 +25,13 @@ func NewController(port serial.PortInterface) *Controller {
 	}
 }
 
+// SetTimeout overrides the default 3s response timeout. Useful for tests.
+func (c *Controller) SetTimeout(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.timeout = d
+}
+
 // execute sends a command and reads the response up to the '#' terminator.
 // The caller must NOT hold c.mu; this method acquires it.
 func (c *Controller) execute(cmd string) (string, error) {

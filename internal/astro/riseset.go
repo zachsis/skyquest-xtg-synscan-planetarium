@@ -13,9 +13,9 @@ const standardAltitude = -0.5667 // degrees, accounting for refraction
 // circumpolar objects.
 func RiseSetTimes(eq Equatorial, loc GeographicLocation, date time.Time) (rise, transit, set time.Time, err error) {
 	// Algorithm from Meeus, Chapter 15.
-	lat := loc.Latitude * math.Pi / 180
-	dec := eq.Dec * math.Pi / 180
-	h0 := standardAltitude * math.Pi / 180
+	lat := loc.Latitude * deg2rad
+	dec := eq.Dec * deg2rad
+	h0 := standardAltitude * deg2rad
 
 	// Compute cos(H0) where H0 is the hour angle at rise/set.
 	cosH0 := (math.Sin(h0) - math.Sin(lat)*math.Sin(dec)) / (math.Cos(lat) * math.Cos(dec))
@@ -27,7 +27,7 @@ func RiseSetTimes(eq Equatorial, loc GeographicLocation, date time.Time) (rise, 
 		return time.Time{}, time.Time{}, time.Time{}, ErrNeverSets
 	}
 
-	H0 := math.Acos(cosH0) * 180 / math.Pi // in degrees
+	H0 := math.Acos(cosH0) * rad2deg // in degrees
 
 	// Compute transit time.
 	// Use the date's midnight UTC as the base.
@@ -39,33 +39,13 @@ func RiseSetTimes(eq Equatorial, loc GeographicLocation, date time.Time) (rise, 
 
 	// Transit: when RA = LST, so transit_LST = RA
 	// Time of transit in hours after midnight.
-	transitHours := raHours - lst0
-	if transitHours < 0 {
-		transitHours += 24
-	}
-	if transitHours >= 24 {
-		transitHours -= 24
-	}
+	transitHours := normalizeHours(raHours - lst0)
 
 	// H0 in hours.
 	H0hours := H0 / 15.0
 
-	riseHours := transitHours - H0hours
-	setHours := transitHours + H0hours
-
-	// Normalize to [0, 24).
-	for riseHours < 0 {
-		riseHours += 24
-	}
-	for riseHours >= 24 {
-		riseHours -= 24
-	}
-	for setHours < 0 {
-		setHours += 24
-	}
-	for setHours >= 24 {
-		setHours -= 24
-	}
+	riseHours := normalizeHours(transitHours - H0hours)
+	setHours := normalizeHours(transitHours + H0hours)
 
 	rise = midnight.Add(time.Duration(riseHours * float64(time.Hour)))
 	transit = midnight.Add(time.Duration(transitHours * float64(time.Hour)))

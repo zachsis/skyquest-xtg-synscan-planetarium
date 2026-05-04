@@ -6,18 +6,21 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/astro"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/panels"
 )
 
 // MainApp holds the application window, navigation, and panels.
 type MainApp struct {
-	fyneApp fyne.App
-	window  fyne.Window
-	config  *config.Config
-	nav     *widget.List
-	content *fyne.Container
-	panels  []Panel
+	fyneApp      fyne.App
+	window       fyne.Window
+	config       *config.Config
+	nav          *widget.List
+	content      *fyne.Container
+	panels       []Panel
+	StatusPanel  *StatusPanel // exposed for PositionProvider consumers
 }
 
 // NewMainApp creates a new MainApp.
@@ -32,12 +35,18 @@ func NewMainApp(a fyne.App, w fyne.Window, cfg *config.Config) *MainApp {
 // Setup initializes the navigation panels and window layout.
 func (m *MainApp) Setup() {
 	settingsPanel := panels.NewSettingsPanel(m.config, nil)
+	astroSvc := astro.NewAstroService(m.config)
+	statusPanel := NewStatusPanel(m.config, astroSvc)
+	m.StatusPanel = statusPanel
+	slewSvc := slew.NewGoToService(statusPanel.Controller())
+	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
+	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astroSvc, m.config)
 
 	m.panels = []Panel{
-		NewPlaceholderPanel("Status", theme.InfoIcon()),
-		NewPlaceholderPanel("GoTo", theme.NavigateNextIcon()),
-		NewPlaceholderPanel("Tracking", theme.MediaPlayIcon()),
-		NewPlaceholderPanel("Alignment", theme.VisibilityIcon()),
+		statusPanel,
+		gotoPanel,
+		trackingPanel,
+		NewAlignmentPanel(statusPanel, slewSvc, astroSvc, m.config),
 		NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon()),
 		NewPlaceholderPanel("Objects", theme.SearchIcon()),
 		settingsPanel,
