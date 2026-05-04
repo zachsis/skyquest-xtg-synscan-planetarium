@@ -53,7 +53,7 @@ func (m *MainApp) Setup() {
 
 	var skyChartPanel Panel
 	if cat != nil {
-		skyChartPanel = NewSkyChartPanel(cat, m.config, astroSvc)
+		skyChartPanel = NewSkyChartPanel(cat, m.config, astroSvc, statusPanel, slewSvc)
 	} else {
 		skyChartPanel = NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon())
 	}
