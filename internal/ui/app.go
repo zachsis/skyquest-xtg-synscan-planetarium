@@ -46,7 +46,7 @@ func (m *MainApp) Setup() {
 		statusPanel,
 		gotoPanel,
 		trackingPanel,
-		NewPlaceholderPanel("Alignment", theme.VisibilityIcon()),
+		NewAlignmentPanel(statusPanel, slewSvc, astro.NewAstroService(m.config), m.config),
 		NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon()),
 		NewPlaceholderPanel("Objects", theme.SearchIcon()),
 		settingsPanel,
