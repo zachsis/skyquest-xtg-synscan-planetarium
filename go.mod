@@ -4,6 +4,8 @@ go 1.26.2
 
 require (
 	fyne.io/fyne/v2 v2.7.3
+	github.com/soniakeys/meeus/v3 v3.0.1
+	github.com/soniakeys/unit v1.0.0
 	go.bug.st/serial v1.6.4
 )
 
