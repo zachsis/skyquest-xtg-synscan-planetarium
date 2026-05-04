@@ -3,6 +3,7 @@ package serial
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // MockPort is a mock serial port for testing.
@@ -103,4 +104,37 @@ func (m *MockPort) SentData() [][]byte {
 	out := m.sendBuf
 	m.sendBuf = nil
 	return out
+}
+
+// ScriptResponses starts a goroutine that watches outgoing commands and
+// automatically responds after responseDelay. The script maps the first
+// byte of each command to a response string. Unknown commands receive "#".
+// Stops when stopCh is closed.
+func (m *MockPort) ScriptResponses(script map[byte]string, responseDelay time.Duration, stopCh <-chan struct{}) {
+	go func() {
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				sent := m.SentData()
+				for _, cmd := range sent {
+					if len(cmd) == 0 {
+						continue
+					}
+					resp, ok := script[cmd[0]]
+					if !ok {
+						resp = "#"
+					}
+					r := resp
+					go func() {
+						time.Sleep(responseDelay)
+						m.InjectResponse([]byte(r))
+					}()
+				}
+			}
+		}
+	}()
 }
