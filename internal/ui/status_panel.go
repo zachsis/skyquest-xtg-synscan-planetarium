@@ -135,6 +135,12 @@ func (p *StatusPanel) Title() string { return "Status" }
 // Icon implements Panel.
 func (p *StatusPanel) Icon() fyne.Resource { return theme.InfoIcon() }
 
+// Controller returns the underlying SynScan controller.
+// Other panels in the same package use this to share the serial connection.
+func (p *StatusPanel) Controller() *synscan.Controller {
+	return p.ctrl
+}
+
 // CurrentState implements telescope.PositionProvider.
 func (p *StatusPanel) CurrentState() telescope.TelescopeState {
 	return p.pub.CurrentState()

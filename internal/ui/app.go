@@ -36,10 +36,12 @@ func (m *MainApp) Setup() {
 	statusPanel := NewStatusPanel(m.config)
 	m.StatusPanel = statusPanel
 
+	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
+
 	m.panels = []Panel{
 		statusPanel,
 		NewPlaceholderPanel("GoTo", theme.NavigateNextIcon()),
-		NewPlaceholderPanel("Tracking", theme.MediaPlayIcon()),
+		trackingPanel,
 		NewPlaceholderPanel("Alignment", theme.VisibilityIcon()),
 		NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon()),
 		NewPlaceholderPanel("Objects", theme.SearchIcon()),
