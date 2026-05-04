@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strconv"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
@@ -9,6 +11,8 @@ import (
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/astro"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/catalog"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/telescope"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/skychart"
 )
 
@@ -19,12 +23,19 @@ type SkyChartPanel struct {
 }
 
 // NewSkyChartPanel creates the sky chart panel.
-func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.AstroService) *SkyChartPanel {
+func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.AstroService, pos telescope.PositionProvider, slewSvc slew.GoToService) *SkyChartPanel {
 	chart := skychart.NewSkyChartWidget(cat, cfg, astroSvc)
 
 	// Register constellation overlay.
 	conOverlay := skychart.NewConstellationOverlay(cat)
 	chart.AddOverlay(conOverlay)
+
+	// Register crosshair overlay.
+	crosshairOverlay := skychart.NewCrosshairOverlay(pos)
+	chart.AddOverlay(crosshairOverlay)
+
+	// Wire slew service for GoTo from star popup.
+	chart.SetSlewService(slewSvc)
 
 	showGrid := widget.NewCheck("Grid", func(checked bool) {
 		chart.SetShowGrid(checked)
@@ -43,6 +54,16 @@ func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.
 	})
 	showLabels.SetChecked(true)
 
+	fovEntry := widget.NewEntry()
+	fovEntry.SetText("60")
+	fovEntry.SetPlaceHolder("FOV (arcmin)")
+	fovEntry.OnChanged = func(s string) {
+		if v, err := strconv.ParseFloat(s, 64); err == nil && v > 0 && v < 600 {
+			crosshairOverlay.SetFOV(v)
+			chart.Refresh()
+		}
+	}
+
 	refreshBtn := widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), func() {
 		chart.Refresh()
 	})
@@ -53,6 +74,9 @@ func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.
 		showGrid,
 		showLines,
 		showLabels,
+		widget.NewSeparator(),
+		widget.NewLabel("Eyepiece FOV"),
+		fovEntry,
 		widget.NewSeparator(),
 		refreshBtn,
 	)

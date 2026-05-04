@@ -14,6 +14,7 @@ import (
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/astro"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/catalog"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
 )
 
 const refreshInterval = 30 * time.Second
@@ -46,6 +47,7 @@ type SkyChartWidget struct {
 
 	renderedStars []RenderedStar
 	onStarClicked func(catalog.Star)
+	slewService   slew.GoToService
 }
 
 // NewSkyChartWidget creates a new sky chart widget.
@@ -142,6 +144,13 @@ func (w *SkyChartWidget) SetShowGrid(show bool) {
 func (w *SkyChartWidget) SetOnStarClicked(f func(catalog.Star)) {
 	w.mu.Lock()
 	w.onStarClicked = f
+	w.mu.Unlock()
+}
+
+// SetSlewService sets the GoTo service for slewing to selected stars.
+func (w *SkyChartWidget) SetSlewService(svc slew.GoToService) {
+	w.mu.Lock()
+	w.slewService = svc
 	w.mu.Unlock()
 }
 
