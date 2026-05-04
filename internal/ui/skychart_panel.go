@@ -22,10 +22,26 @@ type SkyChartPanel struct {
 func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.AstroService) *SkyChartPanel {
 	chart := skychart.NewSkyChartWidget(cat, cfg, astroSvc)
 
+	// Register constellation overlay.
+	conOverlay := skychart.NewConstellationOverlay(cat)
+	chart.AddOverlay(conOverlay)
+
 	showGrid := widget.NewCheck("Grid", func(checked bool) {
 		chart.SetShowGrid(checked)
 	})
 	showGrid.SetChecked(true)
+
+	showLines := widget.NewCheck("Constellation Lines", func(checked bool) {
+		conOverlay.SetShowLines(checked)
+		chart.Refresh()
+	})
+	showLines.SetChecked(true)
+
+	showLabels := widget.NewCheck("Constellation Labels", func(checked bool) {
+		conOverlay.SetShowLabels(checked)
+		chart.Refresh()
+	})
+	showLabels.SetChecked(true)
 
 	refreshBtn := widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), func() {
 		chart.Refresh()
@@ -35,6 +51,8 @@ func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.
 		widget.NewLabel("Overlays"),
 		widget.NewSeparator(),
 		showGrid,
+		showLines,
+		showLabels,
 		widget.NewSeparator(),
 		refreshBtn,
 	)
