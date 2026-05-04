@@ -48,11 +48,11 @@ type StatusPanel struct {
 }
 
 // NewStatusPanel creates the live status panel bound to the given config.
-func NewStatusPanel(cfg *config.Config) *StatusPanel {
+func NewStatusPanel(cfg *config.Config, astroSvc *astro.AstroService) *StatusPanel {
 	p := &StatusPanel{
 		cfg:         cfg,
 		port:        serial.NewPort(),
-		astroSvc:    astro.NewAstroService(cfg),
+		astroSvc:    astroSvc,
 		pub:         telescope.NewStatePublisher(),
 		statusLabel: widget.NewLabel("Disconnected"),
 		raVal:       widget.NewLabel("—"),

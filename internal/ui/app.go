@@ -35,10 +35,9 @@ func NewMainApp(a fyne.App, w fyne.Window, cfg *config.Config) *MainApp {
 // Setup initializes the navigation panels and window layout.
 func (m *MainApp) Setup() {
 	settingsPanel := panels.NewSettingsPanel(m.config, nil)
-	statusPanel := NewStatusPanel(m.config)
-	m.StatusPanel = statusPanel
-
 	astroSvc := astro.NewAstroService(m.config)
+	statusPanel := NewStatusPanel(m.config, astroSvc)
+	m.StatusPanel = statusPanel
 	slewSvc := slew.NewGoToService(statusPanel.Controller())
 	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
 	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astroSvc, m.config)

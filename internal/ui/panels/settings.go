@@ -142,7 +142,7 @@ func (p *SettingsPanel) Icon() fyne.Resource         { return nil }
 
 // SettingsPanel satisfies ui.Panel via structural typing.
 
-func validateRange(s string, min, max float64, name string) error {
+func validateRange(s string, min, max float64) error {
 	v, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return fmt.Errorf("must be a number")
@@ -153,6 +153,6 @@ func validateRange(s string, min, max float64, name string) error {
 	return nil
 }
 
-func validateLatitude(s string) error  { return validateRange(s, -90, 90, "Latitude") }
-func validateLongitude(s string) error { return validateRange(s, -180, 180, "Longitude") }
-func validateElevation(s string) error { return validateRange(s, 0, 1e9, "Elevation") }
+func validateLatitude(s string) error  { return validateRange(s, -90, 90) }
+func validateLongitude(s string) error { return validateRange(s, -180, 180) }
+func validateElevation(s string) error { return validateRange(s, 0, 1e9) }

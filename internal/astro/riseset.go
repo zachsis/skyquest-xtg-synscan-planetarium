@@ -39,33 +39,13 @@ func RiseSetTimes(eq Equatorial, loc GeographicLocation, date time.Time) (rise, 
 
 	// Transit: when RA = LST, so transit_LST = RA
 	// Time of transit in hours after midnight.
-	transitHours := raHours - lst0
-	if transitHours < 0 {
-		transitHours += 24
-	}
-	if transitHours >= 24 {
-		transitHours -= 24
-	}
+	transitHours := normalizeHours(raHours - lst0)
 
 	// H0 in hours.
 	H0hours := H0 / 15.0
 
-	riseHours := transitHours - H0hours
-	setHours := transitHours + H0hours
-
-	// Normalize to [0, 24).
-	for riseHours < 0 {
-		riseHours += 24
-	}
-	for riseHours >= 24 {
-		riseHours -= 24
-	}
-	for setHours < 0 {
-		setHours += 24
-	}
-	for setHours >= 24 {
-		setHours -= 24
-	}
+	riseHours := normalizeHours(transitHours - H0hours)
+	setHours := normalizeHours(transitHours + H0hours)
 
 	rise = midnight.Add(time.Duration(riseHours * float64(time.Hour)))
 	transit = midnight.Add(time.Duration(transitHours * float64(time.Hour)))
