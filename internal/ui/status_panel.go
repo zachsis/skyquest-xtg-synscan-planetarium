@@ -203,7 +203,7 @@ func (p *StatusPanel) connect() {
 	go p.pollLoop(ctx)
 }
 
-func (p *StatusPanel) disconnect() {
+func (p *StatusPanel) stopPolling() {
 	p.mu.Lock()
 	cancel := p.cancelPoll
 	p.cancelPoll = nil
@@ -211,6 +211,10 @@ func (p *StatusPanel) disconnect() {
 	if cancel != nil {
 		cancel()
 	}
+}
+
+func (p *StatusPanel) disconnect() {
+	p.stopPolling()
 	// handleDisconnected will fire via OnStatusChange.
 	p.port.Disconnect()
 }
@@ -218,13 +222,7 @@ func (p *StatusPanel) disconnect() {
 // handleDisconnected resets the UI and stops polling.
 // Called from OnStatusChange on both user-initiated and unexpected disconnects.
 func (p *StatusPanel) handleDisconnected() {
-	p.mu.Lock()
-	cancel := p.cancelPoll
-	p.cancelPoll = nil
-	p.mu.Unlock()
-	if cancel != nil {
-		cancel()
-	}
+	p.stopPolling()
 
 	p.connectBtn.SetText("Connect")
 	p.connectBtn.Enable()

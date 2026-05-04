@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	deg2rad = math.Pi / 180
+	rad2deg = 180 / math.Pi
+)
+
 // EquatorialToHorizontal converts equatorial coordinates to horizontal
 // for the given observer location and UTC time.
 // Uses the standard spherical trigonometry formulas (Meeus Chapter 13).
@@ -12,9 +17,9 @@ func EquatorialToHorizontal(eq Equatorial, loc GeographicLocation, t time.Time) 
 	lst := LocalSiderealTime(loc.Longitude, t)
 
 	// Hour angle in hours, then convert to radians.
-	ha := (lst - eq.RA) * 15 * math.Pi / 180 // hours -> degrees -> radians
-	dec := eq.Dec * math.Pi / 180
-	lat := loc.Latitude * math.Pi / 180
+	ha := (lst - eq.RA) * 15 * deg2rad // hours -> degrees -> radians
+	dec := eq.Dec * deg2rad
+	lat := loc.Latitude * deg2rad
 
 	// Altitude.
 	sinAlt := math.Sin(dec)*math.Sin(lat) + math.Cos(dec)*math.Cos(lat)*math.Cos(ha)
@@ -34,8 +39,8 @@ func EquatorialToHorizontal(eq Equatorial, loc GeographicLocation, t time.Time) 
 		az = 2*math.Pi - az
 	}
 
-	altDeg := alt * 180 / math.Pi
-	azDeg := az * 180 / math.Pi
+	altDeg := alt * rad2deg
+	azDeg := az * rad2deg
 	if azDeg < 0 {
 		azDeg += 360
 	}
@@ -51,9 +56,9 @@ func EquatorialToHorizontal(eq Equatorial, loc GeographicLocation, t time.Time) 
 func HorizontalToEquatorial(hz Horizontal, loc GeographicLocation, t time.Time) Equatorial {
 	lst := LocalSiderealTime(loc.Longitude, t)
 
-	alt := hz.Alt * math.Pi / 180
-	az := hz.Az * math.Pi / 180
-	lat := loc.Latitude * math.Pi / 180
+	alt := hz.Alt * deg2rad
+	az := hz.Az * deg2rad
+	lat := loc.Latitude * deg2rad
 
 	// Declination.
 	sinDec := math.Sin(alt)*math.Sin(lat) + math.Cos(alt)*math.Cos(lat)*math.Cos(az)
@@ -73,7 +78,7 @@ func HorizontalToEquatorial(hz Horizontal, loc GeographicLocation, t time.Time) 
 	}
 
 	// RA = LST - HA.
-	raHours := lst - ha*180/math.Pi/15
+	raHours := lst - ha*rad2deg/15
 	for raHours < 0 {
 		raHours += 24
 	}
@@ -83,6 +88,6 @@ func HorizontalToEquatorial(hz Horizontal, loc GeographicLocation, t time.Time) 
 
 	return Equatorial{
 		RA:  raHours,
-		Dec: dec * 180 / math.Pi,
+		Dec: dec * rad2deg,
 	}
 }

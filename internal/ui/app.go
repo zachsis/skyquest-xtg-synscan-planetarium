@@ -38,15 +38,16 @@ func (m *MainApp) Setup() {
 	statusPanel := NewStatusPanel(m.config)
 	m.StatusPanel = statusPanel
 
+	astroSvc := astro.NewAstroService(m.config)
 	slewSvc := slew.NewGoToService(statusPanel.Controller())
 	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
-	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astro.NewAstroService(m.config), m.config)
+	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astroSvc, m.config)
 
 	m.panels = []Panel{
 		statusPanel,
 		gotoPanel,
 		trackingPanel,
-		NewAlignmentPanel(statusPanel, slewSvc, astro.NewAstroService(m.config), m.config),
+		NewAlignmentPanel(statusPanel, slewSvc, astroSvc, m.config),
 		NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon()),
 		NewPlaceholderPanel("Objects", theme.SearchIcon()),
 		settingsPanel,
