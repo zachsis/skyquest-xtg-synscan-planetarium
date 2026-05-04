@@ -12,12 +12,13 @@ import (
 
 // MainApp holds the application window, navigation, and panels.
 type MainApp struct {
-	fyneApp fyne.App
-	window  fyne.Window
-	config  *config.Config
-	nav     *widget.List
-	content *fyne.Container
-	panels  []Panel
+	fyneApp      fyne.App
+	window       fyne.Window
+	config       *config.Config
+	nav          *widget.List
+	content      *fyne.Container
+	panels       []Panel
+	StatusPanel  *StatusPanel // exposed for PositionProvider consumers
 }
 
 // NewMainApp creates a new MainApp.
@@ -32,9 +33,11 @@ func NewMainApp(a fyne.App, w fyne.Window, cfg *config.Config) *MainApp {
 // Setup initializes the navigation panels and window layout.
 func (m *MainApp) Setup() {
 	settingsPanel := panels.NewSettingsPanel(m.config, nil)
+	statusPanel := NewStatusPanel(m.config)
+	m.StatusPanel = statusPanel
 
 	m.panels = []Panel{
-		NewPlaceholderPanel("Status", theme.InfoIcon()),
+		statusPanel,
 		NewPlaceholderPanel("GoTo", theme.NavigateNextIcon()),
 		NewPlaceholderPanel("Tracking", theme.MediaPlayIcon()),
 		NewPlaceholderPanel("Alignment", theme.VisibilityIcon()),
