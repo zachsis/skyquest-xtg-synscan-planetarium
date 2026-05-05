@@ -3,7 +3,6 @@ package skychart
 import (
 	"image"
 	"image/color"
-	"math"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
@@ -121,36 +120,3 @@ func drawText(img *image.RGBA, x, y int, text string, col color.RGBA) {
 	d.DrawString(text)
 }
 
-// drawLine draws a line using Bresenham's algorithm — same as renderer.go's
-// drawLine but accessible here since both are in the same package.
-func drawConstellationLine(img *image.RGBA, x1, y1, x2, y2 float64, col color.RGBA) {
-	ix1, iy1 := int(math.Round(x1)), int(math.Round(y1))
-	ix2, iy2 := int(math.Round(x2)), int(math.Round(y2))
-
-	dx := abs(ix2 - ix1)
-	dy := abs(iy2 - iy1)
-	sx, sy := 1, 1
-	if ix1 > ix2 {
-		sx = -1
-	}
-	if iy1 > iy2 {
-		sy = -1
-	}
-	err := dx - dy
-
-	for {
-		setPixel(img, ix1, iy1, col)
-		if ix1 == ix2 && iy1 == iy2 {
-			break
-		}
-		e2 := 2 * err
-		if e2 > -dy {
-			err -= dy
-			ix1 += sx
-		}
-		if e2 < dx {
-			err += dx
-			iy1 += sy
-		}
-	}
-}

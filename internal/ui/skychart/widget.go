@@ -2,7 +2,6 @@ package skychart
 
 import (
 	"image"
-	"image/color"
 	"math"
 	"sync"
 	"time"
@@ -38,9 +37,7 @@ type SkyChartWidget struct {
 	viewport Viewport
 	showGrid bool
 
-	overlays      []OverlayRenderer
-	highlightedID string
-	highlightStart time.Time
+	overlays []OverlayRenderer
 
 	raster        *canvas.Raster
 	refreshTicker *time.Ticker
@@ -112,15 +109,6 @@ func (w *SkyChartWidget) CenterOn(ra, dec float64) {
 	if w.viewport.Zoom < 4.0 {
 		w.viewport.Zoom = 4.0
 	}
-	w.mu.Unlock()
-	w.Refresh()
-}
-
-// HighlightObject marks an object for pulsing highlight rendering.
-func (w *SkyChartWidget) HighlightObject(id string) {
-	w.mu.Lock()
-	w.highlightedID = id
-	w.highlightStart = time.Now()
 	w.mu.Unlock()
 	w.Refresh()
 }
@@ -202,7 +190,7 @@ func (w *SkyChartWidget) drawChart(width, height int) image.Image {
 
 	// Draw grid.
 	if showGrid {
-		DrawGrid(img, cx, cy, baseR, vp.Zoom)
+		DrawGrid(img, cx, cy, effR)
 	}
 
 	// Compute Alt/Az for all stars and draw above-horizon ones.
@@ -268,13 +256,13 @@ func drawCardinalLabels(img *image.RGBA, cx, cy, baseR float64) {
 		r := baseR + 12
 		x := cx - r*math.Sin(l.az)
 		y := cy - r*math.Cos(l.az)
-		drawLabelChar(img, int(x), int(y), l.text[0], cardinalColor)
+		drawLabelChar(img, int(x), int(y), l.text[0])
 	}
 }
 
 // drawLabelChar draws a single uppercase letter at the given position using
 // a simple 5x7 bitmap font. Only implements N, S, E, W for cardinal labels.
-func drawLabelChar(img *image.RGBA, x, y int, ch byte, col color.RGBA) {
+func drawLabelChar(img *image.RGBA, x, y int, ch byte) {
 	var bitmap [7]byte
 	switch ch {
 	case 'N':

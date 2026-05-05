@@ -65,13 +65,11 @@ func DrawHorizonCircle(img *image.RGBA, cx, cy, radius float64) {
 }
 
 // DrawGrid draws altitude circles and azimuth lines.
-func DrawGrid(img *image.RGBA, cx, cy, baseRadius, zoom float64) {
-	effR := baseRadius * zoom
-
+func DrawGrid(img *image.RGBA, cx, cy, effR float64) {
 	// Altitude circles at 30° and 60°.
 	for _, altDeg := range []float64{30, 60} {
 		alt := altDeg * math.Pi / 180
-		r := effR * math.Cos(alt) / (1.0 + math.Sin(alt))
+		r := StereoRadius(alt, effR)
 		drawCircle(img, cx, cy, r, gridColor)
 	}
 

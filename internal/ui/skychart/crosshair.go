@@ -64,12 +64,12 @@ func (o *CrosshairOverlay) Draw(img *image.RGBA, proj *ProjectionContext) {
 	if o.fovArcmin > 0 {
 		fovRad := o.fovArcmin / 60.0 * math.Pi / 180.0
 		// Compute projected size of FOV at this altitude.
-		r1 := proj.Radius * math.Cos(altRad) / (1.0 + math.Sin(altRad))
+		r1 := StereoRadius(altRad, proj.Radius)
 		altEdge := altRad - fovRad/2
 		if altEdge < 0 {
 			altEdge = 0
 		}
-		r2 := proj.Radius * math.Cos(altEdge) / (1.0 + math.Sin(altEdge))
+		r2 := StereoRadius(altEdge, proj.Radius)
 		fovR := math.Abs(r2 - r1)
 		if fovR > 2 {
 			drawCircle(img, float64(cx), float64(cy), fovR, fovColor)
