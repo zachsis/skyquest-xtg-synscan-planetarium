@@ -30,6 +30,11 @@ func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.
 	conOverlay := skychart.NewConstellationOverlay(cat)
 	chart.AddOverlay(conOverlay)
 
+	// Register DSO & planet overlay.
+	dsoOverlay := skychart.NewDSOOverlay(cat.Registry, cfg)
+	chart.AddOverlay(dsoOverlay)
+	chart.SetDSOOverlay(dsoOverlay)
+
 	// Register crosshair overlay.
 	crosshairOverlay := skychart.NewCrosshairOverlay(pos)
 	chart.AddOverlay(crosshairOverlay)
@@ -54,6 +59,18 @@ func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.
 	})
 	showLabels.SetChecked(true)
 
+	showDSOs := widget.NewCheck("Deep-Sky Objects", func(checked bool) {
+		dsoOverlay.SetShowDSOs(checked)
+		chart.Refresh()
+	})
+	showDSOs.SetChecked(true)
+
+	showPlanets := widget.NewCheck("Planets", func(checked bool) {
+		dsoOverlay.SetShowPlanets(checked)
+		chart.Refresh()
+	})
+	showPlanets.SetChecked(true)
+
 	fovEntry := widget.NewEntry()
 	fovEntry.SetText("60")
 	fovEntry.SetPlaceHolder("FOV (arcmin)")
@@ -74,6 +91,8 @@ func NewSkyChartPanel(cat *catalog.Catalog, cfg *config.Config, astroSvc *astro.
 		showGrid,
 		showLines,
 		showLabels,
+		showDSOs,
+		showPlanets,
 		widget.NewSeparator(),
 		widget.NewLabel("Eyepiece FOV"),
 		fovEntry,

@@ -46,9 +46,13 @@ type SkyChartWidget struct {
 	onStarClicked func(catalog.Star)
 	slewService   slew.GoToService
 
+	// dsoOverlay is the DSO/planet overlay, kept as a named field so Tapped
+	// can read its visibleObjects for click detection.
+	dsoOverlay *DSOOverlay
+
 	// Highlight state: set by HighlightObject, cleared after 5 seconds.
-	highlightID      string    // CatalogID of highlighted object
-	highlightExpiry  time.Time // when highlight expires
+	highlightID     string    // CatalogID of highlighted object
+	highlightExpiry time.Time // when highlight expires
 }
 
 // NewSkyChartWidget creates a new sky chart widget.
@@ -161,6 +165,14 @@ func (w *SkyChartWidget) SetOnStarClicked(f func(catalog.Star)) {
 func (w *SkyChartWidget) SetSlewService(svc slew.GoToService) {
 	w.mu.Lock()
 	w.slewService = svc
+	w.mu.Unlock()
+}
+
+// SetDSOOverlay stores a reference to the DSO overlay so that Tapped can
+// perform hit detection against rendered DSOs and solar-system objects.
+func (w *SkyChartWidget) SetDSOOverlay(overlay *DSOOverlay) {
+	w.mu.Lock()
+	w.dsoOverlay = overlay
 	w.mu.Unlock()
 }
 
