@@ -45,6 +45,10 @@ type SkyChartWidget struct {
 	renderedStars []RenderedStar
 	onStarClicked func(catalog.Star)
 	slewService   slew.GoToService
+
+	// Highlight state: set by HighlightObject, cleared after 5 seconds.
+	highlightID      string    // CatalogID of highlighted object
+	highlightExpiry  time.Time // when highlight expires
 }
 
 // NewSkyChartWidget creates a new sky chart widget.
@@ -111,6 +115,24 @@ func (w *SkyChartWidget) CenterOn(ra, dec float64) {
 	}
 	w.mu.Unlock()
 	w.Refresh()
+}
+
+// HighlightObject marks an object by catalogID with a temporary highlight
+// circle drawn around its screen position for 5 seconds.
+func (w *SkyChartWidget) HighlightObject(catalogID string) {
+	w.mu.Lock()
+	w.highlightID = catalogID
+	w.highlightExpiry = time.Now().Add(5 * time.Second)
+	w.mu.Unlock()
+	w.Refresh()
+
+	// Schedule a refresh after the highlight expires to clear the ring.
+	time.AfterFunc(5*time.Second, func() {
+		w.mu.Lock()
+		w.highlightID = ""
+		w.mu.Unlock()
+		w.Refresh()
+	})
 }
 
 // AddOverlay registers an overlay renderer.
@@ -181,6 +203,8 @@ func (w *SkyChartWidget) drawChart(width, height int) image.Image {
 	showGrid := w.showGrid
 	overlays := make([]OverlayRenderer, len(w.overlays))
 	copy(overlays, w.overlays)
+	highlightID := w.highlightID
+	highlightActive := !w.highlightExpiry.IsZero() && time.Now().Before(w.highlightExpiry)
 	w.mu.Unlock()
 
 	effR := vp.EffectiveRadius(baseR)
@@ -238,10 +262,41 @@ func (w *SkyChartWidget) drawChart(width, height int) image.Image {
 		}
 	}
 
+	// Draw highlight ring around selected object (if active).
+	if highlightActive && highlightID != "" {
+		drawHighlight(img, highlightID, cx, cy, effR, altAzFunc, w.catalog)
+	}
+
 	// Draw cardinal labels.
 	drawCardinalLabels(img, cx, cy, baseR)
 
 	return img
+}
+
+// drawHighlight draws a coloured circle around the highlighted object if it
+// can be found in the catalog registry and is currently above the horizon.
+func drawHighlight(
+	img *image.RGBA,
+	catalogID string,
+	cx, cy, effR float64,
+	altAzFunc func(ra, dec float64) (float64, float64),
+	cat *catalog.Catalog,
+) {
+	obj, ok := cat.Registry.GetByID(catalogID)
+	if !ok {
+		return
+	}
+
+	altRad, azRad := altAzFunc(obj.RAJ2000, obj.DecJ2000)
+	if altRad <= 0 {
+		return
+	}
+
+	sx, sy := StereoProject(altRad, azRad, effR)
+	screenX := cx + sx
+	screenY := cy + sy
+
+	drawHighlightCircle(img, screenX, screenY, 14)
 }
 
 func drawCardinalLabels(img *image.RGBA, cx, cy, baseR float64) {

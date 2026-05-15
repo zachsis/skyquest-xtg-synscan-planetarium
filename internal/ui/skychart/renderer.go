@@ -179,3 +179,12 @@ func abs(n int) int {
 	}
 	return n
 }
+
+// drawHighlightCircle draws a bright yellow ring around a screen position.
+// radius is the ring radius in pixels.
+func drawHighlightCircle(img *image.RGBA, cx, cy, radius float64) {
+	col := color.RGBA{255, 220, 0, 255} // bright yellow
+	drawCircle(img, cx, cy, radius, col)
+	drawCircle(img, cx, cy, radius+1, col)
+	drawCircle(img, cx, cy, radius+2, color.RGBA{255, 220, 0, 128})
+}

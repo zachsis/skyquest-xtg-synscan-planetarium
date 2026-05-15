@@ -49,8 +49,10 @@ func (m *MainApp) Setup() {
 		log.Printf("warning: star catalog failed to load: %v", err)
 	}
 
+	var engine *ephemeris.EphemerisEngine
 	if cat != nil {
-		engine, engErr := ephemeris.NewEphemerisEngine(astroSvc)
+		var engErr error
+		engine, engErr = ephemeris.NewEphemerisEngine(astroSvc)
 		if engErr != nil {
 			log.Printf("warning: ephemeris engine failed to start: %v", engErr)
 		} else {
@@ -70,13 +72,28 @@ func (m *MainApp) Setup() {
 		skyChartPanel = NewPlaceholderPanel("Sky Chart", theme.ColorChromaticIcon())
 	}
 
+	var objectsPanel Panel
+	if cat != nil {
+		obp := NewObjectBrowserPanel(cat.Registry, engine, astroSvc, m.config, slewSvc, m.window)
+		obp.OnShowOnChart = func(ra, dec float64, catalogID string) {
+			m.nav.Select(4) // Sky Chart panel index
+			if sp, ok := skyChartPanel.(*SkyChartPanel); ok {
+				sp.Chart().CenterOn(ra, dec)
+				sp.Chart().HighlightObject(catalogID)
+			}
+		}
+		objectsPanel = obp
+	} else {
+		objectsPanel = NewPlaceholderPanel("Objects", theme.SearchIcon())
+	}
+
 	m.panels = []Panel{
 		statusPanel,
 		gotoPanel,
 		trackingPanel,
 		NewAlignmentPanel(statusPanel, slewSvc, astroSvc, m.config),
 		skyChartPanel,
-		NewPlaceholderPanel("Objects", theme.SearchIcon()),
+		objectsPanel,
 		settingsPanel,
 	}
 
