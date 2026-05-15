@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"log"
 
 	"fyne.io/fyne/v2"
@@ -11,6 +12,7 @@ import (
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/astro"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/catalog"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ephemeris"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/panels"
 )
@@ -45,6 +47,16 @@ func (m *MainApp) Setup() {
 	cat, err := catalog.NewCatalog(astroSvc)
 	if err != nil {
 		log.Printf("warning: star catalog failed to load: %v", err)
+	}
+
+	if cat != nil {
+		engine, engErr := ephemeris.NewEphemerisEngine(astroSvc)
+		if engErr != nil {
+			log.Printf("warning: ephemeris engine failed to start: %v", engErr)
+		} else {
+			cat.Registry.RegisterDynamic(engine)
+			engine.Start(context.Background())
+		}
 	}
 
 	slewSvc := slew.NewGoToService(statusPanel.Controller())

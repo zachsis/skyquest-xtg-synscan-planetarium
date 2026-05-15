@@ -13,21 +13,36 @@ import (
 )
 
 // Catalog is the in-memory star catalog loaded from the embedded HYG CSV.
+// It also owns a CatalogRegistry for Messier, NGC/IC, named stars, and any
+// dynamic providers (e.g. the ephemeris engine).
 type Catalog struct {
 	stars    []Star
 	byName   map[string][]*Star // lowercase name → matching stars
 	byHipID  map[int]*Star
 	astroSvc *astro.AstroService
+
+	// Registry is the CatalogRegistry that holds Messier, NGC/IC, named
+	// stars, and dynamic providers such as the ephemeris engine.
+	// It is always non-nil after a successful NewCatalog call.
+	Registry *CatalogRegistry
 }
 
-// NewCatalog parses the embedded HYG CSV and returns a ready-to-query catalog.
+// NewCatalog parses the embedded HYG CSV, loads all static catalogs into a
+// new CatalogRegistry, and returns a ready-to-query catalog.
 func NewCatalog(astroSvc *astro.AstroService) (*Catalog, error) {
 	start := time.Now()
 	stars, err := parseCSV(hygCSVData)
 	if err != nil {
 		return nil, fmt.Errorf("parse star catalog: %w", err)
 	}
-	c := &Catalog{stars: stars, astroSvc: astroSvc}
+
+	reg := NewCatalogRegistry()
+	if err := reg.LoadAll(); err != nil {
+		// Non-fatal: log and continue with an empty registry.
+		log.Printf("warning: catalog registry load error: %v", err)
+	}
+
+	c := &Catalog{stars: stars, astroSvc: astroSvc, Registry: reg}
 	c.buildIndices()
 	log.Printf("star catalog loaded: %d stars in %v", len(stars), time.Since(start))
 	return c, nil

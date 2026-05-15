@@ -1,4 +1,4 @@
-.PHONY: build run test lint clean generate-catalog
+.PHONY: build run test lint clean generate-catalog generate-ngc generate-vsop87
 
 build:
 	go build -o bin/oriontelescope ./cmd/oriontelescope
@@ -23,3 +23,20 @@ generate-catalog:
 	@echo "Filtering to mag <= 7.0..."
 	python3 scripts/filter_hyg.py /tmp/hygdata_v42.csv > internal/catalog/hyg_filtered.csv
 	@echo "Done: internal/catalog/hyg_filtered.csv"
+
+generate-ngc:
+	@echo "Downloading OpenNGC CSV..."
+	curl -sL -o /tmp/NGC_raw.csv \
+	    "https://raw.githubusercontent.com/mattiaverga/OpenNGC/master/database_files/NGC.csv"
+	@echo "Filtering to objects with known coordinates..."
+	python3 scripts/filter_ngc.py /tmp/NGC_raw.csv internal/catalog/ngc_filtered.csv
+	@echo "Done: internal/catalog/ngc_filtered.csv"
+
+generate-vsop87:
+	@mkdir -p internal/ephemeris/data
+	@for ext in mer ven ear mar jup sat ura nep; do \
+		echo "Downloading VSOP87B.$$ext..."; \
+		curl -sS -o internal/ephemeris/data/VSOP87B.$$ext \
+			"https://cdsarc.cds.unistra.fr/ftp/cats/VI/81/VSOP87B.$$ext"; \
+	done
+	@echo "VSOP87B data files downloaded."
