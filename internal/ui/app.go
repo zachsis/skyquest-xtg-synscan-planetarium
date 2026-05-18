@@ -16,6 +16,7 @@ import (
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ephemeris"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/logging"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/server"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/panels"
 )
@@ -67,6 +68,17 @@ func (m *MainApp) Setup() {
 	slewSvc := slew.NewGoToService(statusPanel.Controller())
 	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
 	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astroSvc, m.config)
+
+	// --- Stellarium TCP server ---
+	m.config.RLock()
+	stelPort := m.config.StellariumPort
+	stelIntervalMs := m.config.StellariumIntervalMs
+	stelEnabled := m.config.StellariumEnabled
+	m.config.RUnlock()
+
+	stelInterval := time.Duration(stelIntervalMs) * time.Millisecond
+	stelSrv := server.NewStellariumServer(stelPort, stelInterval, slewSvc)
+	stelSrv.SetPositionProvider(statusPanel)
 
 	// --- Observation logging ---
 	var logStore logging.LogStore
@@ -139,6 +151,16 @@ func (m *MainApp) Setup() {
 		logPanel = NewPlaceholderPanel("Log", theme.ListIcon())
 	}
 
+	// Wire Stellarium server into the settings panel.
+	settingsPanel.SetStellariumServer(stelSrv, m.config)
+
+	// Auto-start if configured.
+	if stelEnabled {
+		if err := stelSrv.Start(); err != nil {
+			log.Printf("warning: stellarium server auto-start failed: %v", err)
+		}
+	}
+
 	// panels[0..5] = status, goto, tracking, alignment, sky chart, objects
 	// panels[6]    = log  (new)
 	// panels[7]    = settings
@@ -190,6 +212,8 @@ func (m *MainApp) Setup() {
 	// Session lifecycle: close session (and prune if empty) when the window
 	// is closed.
 	m.window.SetCloseIntercept(func() {
+		stelSrv.Stop()
+
 		if unsubAutoLog != nil {
 			unsubAutoLog()
 		}
