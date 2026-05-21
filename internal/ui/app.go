@@ -3,6 +3,8 @@ package ui
 import (
 	"context"
 	"log"
+	"path/filepath"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -13,6 +15,8 @@ import (
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/catalog"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/config"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ephemeris"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/logging"
+	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/server"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/slew"
 	"github.com/zachsis/skyquest-xtg-synscan-planetarium/internal/ui/panels"
 )
@@ -65,6 +69,52 @@ func (m *MainApp) Setup() {
 	trackingPanel := NewTrackingPanel(statusPanel, statusPanel.Controller())
 	gotoPanel := NewGoToPanel(statusPanel, slewSvc, astroSvc, m.config)
 
+	// --- Stellarium TCP server ---
+	m.config.RLock()
+	stelPort := m.config.StellariumPort
+	stelIntervalMs := m.config.StellariumIntervalMs
+	stelEnabled := m.config.StellariumEnabled
+	m.config.RUnlock()
+
+	stelInterval := time.Duration(stelIntervalMs) * time.Millisecond
+	stelSrv := server.NewStellariumServer(stelPort, stelInterval, slewSvc)
+	stelSrv.SetPositionProvider(statusPanel)
+
+	// --- Observation logging ---
+	var logStore logging.LogStore
+	var activeSessionID int64
+	var unsubAutoLog func()
+
+	if cfgDir, err := config.ConfigDir(); err != nil {
+		log.Printf("warning: cannot determine config dir for log db: %v", err)
+	} else {
+		dbPath := filepath.Join(cfgDir, "observations.db")
+		if store, err := logging.OpenSQLiteStore(dbPath); err != nil {
+			log.Printf("warning: observation log db failed to open: %v", err)
+		} else {
+			logStore = store
+
+			sess := &logging.Session{
+				StartedAt:    time.Now().UTC(),
+				ObserverLat:  m.config.GetLatitude(),
+				ObserverLon:  m.config.GetLongitude(),
+				ObserverElev: m.config.GetElevation(),
+				LocationName: m.config.LocationName,
+			}
+			if err := logStore.CreateSession(sess); err != nil {
+				log.Printf(
+					"warning: could not create observation session: %v",
+					err,
+				)
+			} else {
+				activeSessionID = sess.ID
+				unsubAutoLog = logging.RegisterAutoLog(
+					slewSvc, logStore, activeSessionID,
+				)
+			}
+		}
+	}
+
 	var skyChartPanel Panel
 	if cat != nil {
 		skyChartPanel = NewSkyChartPanel(cat, m.config, astroSvc, statusPanel, slewSvc)
@@ -74,9 +124,11 @@ func (m *MainApp) Setup() {
 
 	var objectsPanel Panel
 	if cat != nil {
-		obp := NewObjectBrowserPanel(cat.Registry, engine, astroSvc, m.config, slewSvc, m.window)
+		obp := NewObjectBrowserPanel(
+			cat.Registry, engine, astroSvc, m.config, slewSvc, m.window,
+		)
 		obp.OnShowOnChart = func(ra, dec float64, catalogID string) {
-			m.nav.Select(4) // Sky Chart panel index
+			m.nav.Select(4) // Sky Chart panel index (unchanged)
 			if sp, ok := skyChartPanel.(*SkyChartPanel); ok {
 				sp.Chart().CenterOn(ra, dec)
 				sp.Chart().HighlightObject(catalogID)
@@ -87,6 +139,31 @@ func (m *MainApp) Setup() {
 		objectsPanel = NewPlaceholderPanel("Objects", theme.SearchIcon())
 	}
 
+	// Build the log panel (nil store is handled gracefully by a placeholder).
+	var logPanel Panel
+	if logStore != nil {
+		var reg *catalog.CatalogRegistry
+		if cat != nil {
+			reg = cat.Registry
+		}
+		logPanel = NewLogPanel(logStore, activeSessionID, reg, m.window)
+	} else {
+		logPanel = NewPlaceholderPanel("Log", theme.ListIcon())
+	}
+
+	// Wire Stellarium server into the settings panel.
+	settingsPanel.SetStellariumServer(stelSrv, m.config)
+
+	// Auto-start if configured.
+	if stelEnabled {
+		if err := stelSrv.Start(); err != nil {
+			log.Printf("warning: stellarium server auto-start failed: %v", err)
+		}
+	}
+
+	// panels[0..5] = status, goto, tracking, alignment, sky chart, objects
+	// panels[6]    = log  (new)
+	// panels[7]    = settings
 	m.panels = []Panel{
 		statusPanel,
 		gotoPanel,
@@ -94,6 +171,7 @@ func (m *MainApp) Setup() {
 		NewAlignmentPanel(statusPanel, slewSvc, astroSvc, m.config),
 		skyChartPanel,
 		objectsPanel,
+		logPanel,
 		settingsPanel,
 	}
 
@@ -130,4 +208,28 @@ func (m *MainApp) Setup() {
 
 	m.window.SetContent(split)
 	m.window.Resize(fyne.NewSize(1024, 768))
+
+	// Session lifecycle: close session (and prune if empty) when the window
+	// is closed.
+	m.window.SetCloseIntercept(func() {
+		stelSrv.Stop()
+
+		if unsubAutoLog != nil {
+			unsubAutoLog()
+		}
+		if logStore != nil && activeSessionID != 0 {
+			if err := logStore.CloseSession(
+				activeSessionID, time.Now().UTC(),
+			); err != nil {
+				log.Printf("warning: close session: %v", err)
+			}
+			if err := logStore.DeleteEmptySession(activeSessionID); err != nil {
+				log.Printf("warning: delete empty session: %v", err)
+			}
+			if err := logStore.Close(); err != nil {
+				log.Printf("warning: close log store: %v", err)
+			}
+		}
+		m.window.Close()
+	})
 }

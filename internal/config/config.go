@@ -32,6 +32,11 @@ type Config struct {
 
 	// Filtering.
 	MagnitudeCutoff float64 `json:"magnitude_cutoff"`
+
+	// Stellarium TCP server.
+	StellariumEnabled    bool `json:"stellarium_enabled"`
+	StellariumPort       int  `json:"stellarium_port"`
+	StellariumIntervalMs int  `json:"stellarium_interval_ms"`
 }
 
 // GetLatitude implements astro.LocationProvider.
@@ -70,11 +75,14 @@ func (c *Config) RUnlock() { c.mu.RUnlock() }
 // DefaultConfig returns a new Config with default values.
 func DefaultConfig() *Config {
 	return &Config{
-		Latitude:        0,
-		Longitude:       0,
-		Elevation:       0,
-		BaudRate:        9600,
-		MagnitudeCutoff: 10.0,
+		Latitude:             0,
+		Longitude:            0,
+		Elevation:            0,
+		BaudRate:             9600,
+		MagnitudeCutoff:      10.0,
+		StellariumEnabled:    false,
+		StellariumPort:       10001,
+		StellariumIntervalMs: 500,
 	}
 }
 
@@ -119,7 +127,25 @@ func Load() (*Config, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("config: parse: %w", err)
 	}
+	applyDefaults(&cfg)
 	return &cfg, nil
+}
+
+// applyDefaults fills in zero values with sensible defaults so that existing
+// config files (written before new fields were added) behave correctly.
+func applyDefaults(cfg *Config) {
+	if cfg.BaudRate == 0 {
+		cfg.BaudRate = 9600
+	}
+	if cfg.MagnitudeCutoff == 0 {
+		cfg.MagnitudeCutoff = 10.0
+	}
+	if cfg.StellariumPort == 0 {
+		cfg.StellariumPort = 10001
+	}
+	if cfg.StellariumIntervalMs == 0 {
+		cfg.StellariumIntervalMs = 500
+	}
 }
 
 // Save persists the configuration to disk as indented JSON.
@@ -161,6 +187,7 @@ func loadFrom(path string) (*Config, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("config: parse: %w", err)
 	}
+	applyDefaults(&cfg)
 	return &cfg, nil
 }
 
