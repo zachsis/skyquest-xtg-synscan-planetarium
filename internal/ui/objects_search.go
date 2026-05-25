@@ -89,6 +89,7 @@ type objectFilterBar struct {
 
 func newObjectFilterBar(onChange func()) *objectFilterBar {
 	fb := &objectFilterBar{}
+	ready := false
 
 	typeLabels := make([]string, len(typeFilterOptions))
 	for i, o := range typeFilterOptions {
@@ -101,7 +102,9 @@ func newObjectFilterBar(onChange func()) *objectFilterBar {
 				break
 			}
 		}
-		onChange()
+		if ready {
+			onChange()
+		}
 	})
 	fb.typeSelect.SetSelected("All Types")
 
@@ -116,7 +119,9 @@ func newObjectFilterBar(onChange func()) *objectFilterBar {
 				break
 			}
 		}
-		onChange()
+		if ready {
+			onChange()
+		}
 	})
 	fb.catalogSelect.SetSelected("All Catalogs")
 
@@ -131,14 +136,19 @@ func newObjectFilterBar(onChange func()) *objectFilterBar {
 				break
 			}
 		}
-		onChange()
+		if ready {
+			onChange()
+		}
 	})
 	fb.magSelect.SetSelected("Any Magnitude")
 
 	fb.horizonCheck = widget.NewCheck("Above horizon only", func(_ bool) {
-		onChange()
+		if ready {
+			onChange()
+		}
 	})
 
+	ready = true
 	return fb
 }
 

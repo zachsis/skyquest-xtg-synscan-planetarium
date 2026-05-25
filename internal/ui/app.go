@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -88,6 +89,9 @@ func (m *MainApp) Setup() {
 	if cfgDir, err := config.ConfigDir(); err != nil {
 		log.Printf("warning: cannot determine config dir for log db: %v", err)
 	} else {
+		if err := os.MkdirAll(cfgDir, 0700); err != nil {
+			log.Printf("warning: cannot create config dir: %v", err)
+		}
 		dbPath := filepath.Join(cfgDir, "observations.db")
 		if store, err := logging.OpenSQLiteStore(dbPath); err != nil {
 			log.Printf("warning: observation log db failed to open: %v", err)
